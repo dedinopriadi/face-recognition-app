@@ -13,17 +13,17 @@ const { redisClient } = require('../config/redis');
 let sensitiveLimiter = (req, res, next) => next();
 if (process.env.NODE_ENV !== 'test' && process.env.DISABLE_RATE_LIMIT !== 'true') {
   sensitiveLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 menit
-    max: 10, // Maksimal 10 request per 15 menit per IP
-    message: {
-      error: 'Too many requests, please try again later.'
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-    store: new RedisStore({
-      sendCommand: (...args) => redisClient.sendCommand(args),
-    }),
-  });
+  windowMs: 15 * 60 * 1000, // 15 menit
+  max: 10, // Maksimal 10 request per 15 menit per IP
+  message: {
+    error: 'Too many requests, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.sendCommand(args),
+  }),
+});
 }
 // --- End Rate Limiting Setup ---
 

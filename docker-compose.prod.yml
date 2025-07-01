@@ -1,0 +1,51 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+    container_name: face-recognition-prod
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    volumes:
+      - ./uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - face-recognition-prod-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: face-recognition-redis-prod
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - face-recognition-prod-net
+
+  # Uncomment jika ingin reverse proxy nginx
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: face-recognition-nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - app
+  #   networks:
+  #     - face-recognition-prod-net
+
+networks:
+  face-recognition-prod-net:
+    driver: bridge 

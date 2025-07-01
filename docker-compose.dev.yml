@@ -1,0 +1,59 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: face-recognition-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - REDIS_ENABLED=true
+      - REDIS_HOST=face-redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./uploads:/app/uploads
+      - ./models:/app/models
+      - ./test-images:/app/test-images
+    depends_on:
+      - face-redis
+    platform: linux/arm64
+    networks:
+      - face-recognition-dev-net
+
+  face-redis:
+    image: redis:7-alpine
+    container_name: face-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - face-recognition-dev-net
+
+  adminer:
+    image: adminer:latest
+    container_name: face-recognition-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    networks:
+      - face-recognition-dev-net
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: face-recognition-redis-commander
+    restart: unless-stopped
+    environment:
+      - REDIS_HOSTS=local:face-redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - face-redis
+    networks:
+      - face-recognition-dev-net
+
+networks:
+  face-recognition-dev-net:
+    driver: bridge 

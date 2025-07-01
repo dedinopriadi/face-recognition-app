@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Status - Face Recognition App</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex flex-col">
+    <%- include('partials/header', { activePage: 'api-status' }) %>
+    <main class="flex-1 flex items-center justify-center py-10">
+        <div class="w-full max-w-xl bg-white rounded-2xl shadow-2xl p-10 mx-2">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-3xl font-extrabold flex items-center">
+                    <i class="fas fa-server text-blue-500 mr-3"></i> API Status
+                </h1>
+                <button id="refreshStatusBtn" class="text-gray-400 hover:text-blue-500 focus:outline-none" title="Refresh status">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+            <div class="space-y-6">
+                <div class="flex items-center">
+                    <span class="font-semibold w-32">Status:</span>
+                    <span class="text-green-600 font-bold flex items-center text-lg" id="api-status"><i id="api-status-icon" class="fas fa-check-circle mr-2"></i> <span id="api-status-text"><%= status.toUpperCase() %></span></span>
+                </div>
+                <div class="flex items-center">
+                    <span class="font-semibold w-32">Version:</span>
+                    <span class="text-gray-800" id="api-version"><%= version %></span>
+                </div>
+                <div class="flex items-center">
+                    <span class="font-semibold w-32">Uptime:</span>
+                    <span class="text-gray-800" id="api-uptime"><%= uptime %></span>
+                </div>
+                <div class="flex items-center">
+                    <span class="font-semibold w-32">Redis:</span>
+                    <span id="api-redis" class="<%= redisStatus === 'connected' ? 'text-green-600 font-bold flex items-center text-lg' : 'text-red-600 font-bold flex items-center text-lg' %>">
+                        <i class="<%= redisStatus === 'connected' ? 'fas fa-check-circle mr-2' : 'fas fa-times-circle mr-2' %>"></i>
+                        <%= redisStatus.toUpperCase() %>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </main>
+    <%- include('partials/footer') %>
+    <script>
+        async function fetchStatus() {
+            const btn = document.getElementById('refreshStatusBtn');
+            btn.classList.add('animate-spin');
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                document.getElementById('api-status-text').innerHTML = data.status.toUpperCase() || 'UP';
+                document.getElementById('api-status-icon').className = data.status && data.status.toLowerCase().includes('up') ? 'fas fa-check-circle text-green-600 mr-2' : 'fas fa-times-circle text-red-600 mr-2';
+                document.getElementById('api-version').textContent = data.version;
+                document.getElementById('api-uptime').textContent = data.uptime || '-';
+                document.getElementById('api-redis').innerHTML = data.redisStatus === 'connected'
+                    ? '<i class="fas fa-check-circle mr-2"></i> CONNECTED'
+                    : `<i class="fas fa-times-circle mr-2"></i> ${data.redisStatus}`;
+                document.getElementById('api-redis').className = data.redisStatus === 'connected'
+                    ? 'text-green-600 font-bold flex items-center text-lg'
+                    : 'text-red-600 font-bold flex items-center text-lg';
+            } catch (e) {
+                alert('Failed to refresh status!');
+            } finally {
+                btn.classList.remove('animate-spin');
+            }
+        }
+        document.getElementById('refreshStatusBtn').addEventListener('click', fetchStatus);
+    </script>
+</body>
+</html> 

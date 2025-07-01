@@ -1,0 +1,7 @@
+uploads/*
+!uploads/.gitkeep
+.cursorignore
+node_modules/
+.env
+data/
+logs/

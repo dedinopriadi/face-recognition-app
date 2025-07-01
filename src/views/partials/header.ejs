@@ -1,0 +1,17 @@
+<nav class="bg-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex items-center">
+                <i class="fas fa-face-smile text-2xl text-blue-600 mr-3"></i>
+                <span class="text-xl font-bold text-gray-800">Face Recognition</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="/" class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium<%= activePage === 'home' ? ' text-blue-600 font-bold' : '' %>">Home</a>
+                <a href="/enroll" class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium<%= activePage === 'enroll' ? ' text-blue-600 font-bold' : '' %>">Enroll</a>
+                <a href="/recognize" class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium<%= activePage === 'recognize' ? ' text-blue-600 font-bold' : '' %>">Recognize</a>
+                <a href="/about" class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium<%= activePage === 'about' ? ' text-blue-600 font-bold' : '' %>">About</a>
+                <a href="/api-status" class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium<%= activePage === 'api-status' ? ' text-blue-600 font-bold' : '' %>">API Status</a>
+            </div>
+        </div>
+    </div>
+</nav> 

@@ -1,5 +1,5 @@
 const express = require('express');
-const {uploadMiddleware} = require('../middleware/upload');
+const {uploadMiddleware, memoryUploadMiddleware} = require('../middleware/upload');
 const faceController = require('../controllers/faceController');
 const {
   enrollValidationRules,
@@ -50,6 +50,15 @@ router.post(
   '/recognize',
   sensitiveLimiter,
   uploadMiddleware,
+  recognizeValidationRules(),
+  validate,
+  faceController.recognize,
+);
+
+// Live recognize from webcam
+router.post(
+  '/recognize-live',
+  memoryUploadMiddleware,
   recognizeValidationRules(),
   validate,
   faceController.recognize,

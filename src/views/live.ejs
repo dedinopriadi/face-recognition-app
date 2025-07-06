@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Face Recognition - Face Recognition App</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body class="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <%- include('partials/header', { activePage: null }) %>
+
+    <div class="flex flex-col items-center justify-center flex-1 py-8 px-4 sm:px-6 lg:px-8">
+        <div class="w-full max-w-2xl bg-white/60 backdrop-blur-md rounded-2xl shadow-2xl p-8 relative">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Live Face Recognition</h1>
+                <p class="text-base sm:text-lg text-gray-600">Gunakan kamera webcam untuk deteksi dan pengenalan wajah secara real-time</p>
+            </div>
+            <div id="video-container" class="relative flex justify-center items-center mb-6">
+                <video id="webcam" autoplay playsinline class="rounded-xl shadow-lg border border-gray-300 bg-black" width="640" height="480"></video>
+                <canvas id="overlay" class="absolute left-0 top-0 pointer-events-none"></canvas>
+                <div id="loading-spinner" class="hidden absolute inset-0 flex items-center justify-center bg-white/60 rounded-xl z-10">
+                    <svg class="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+                </div>
+            </div>
+            <div class="flex justify-center items-center mb-4">
+                <button id="actionBtn" class="flex items-center justify-center bg-blue-600 text-white px-8 py-2 rounded-full text-lg font-semibold shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                    <i class="fas fa-play mr-2"></i>Start Camera
+                </button>
+            </div>
+            <div id="status-bar" class="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-white/80 shadow-inner border border-gray-200 mb-4">
+                <span id="status-icon" class="text-blue-600"><i class="fas fa-info-circle"></i></span>
+                <span id="status" class="text-sm font-semibold text-gray-700">Status: Idle</span>
+            </div>
+            <div id="recognition-result-card" class="hidden mt-2 w-full max-w-md mx-auto bg-gradient-to-br from-blue-50 to-white rounded-xl shadow-lg p-5 border-2 border-blue-400">
+                <div class="flex items-center mb-3">
+                    <div class="flex-shrink-0 bg-blue-100 rounded-full p-3 mr-3">
+                        <i class="fas fa-user-check text-3xl text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-extrabold text-blue-700 mb-0 leading-tight">Recognition Results</h2>
+                        <span class="text-xs text-blue-500 font-semibold">Live Detection</span>
+                    </div>
+                </div>
+                <div id="result-content" class="text-gray-800 text-base">
+                    <!-- Dynamic result here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('partials/footer') %>
+    <script src="/js/live.js"></script>
+</body>
+</html> 

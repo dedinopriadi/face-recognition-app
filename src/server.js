@@ -182,6 +182,10 @@ app.get('/about', (req, res) => {
   });
 });
 
+app.get('/live-recognize', (req, res) => {
+  res.render('live');
+});
+
 // API Routes
 app.get('/api/status', async(req, res) => {
   let redisStatus = 'disconnected';
@@ -272,6 +276,7 @@ app.listen(PORT, () => {
   console.log(`🔍 Face Recognition API: http://localhost:${PORT}/api/face/health`);
   console.log(`📝 Enroll page: http://localhost:${PORT}/enroll`);
   console.log(`🔍 Recognize page: http://localhost:${PORT}/recognize`);
+  console.log(`🎥 Live Recognize page: http://localhost:${PORT}/live-recognize`); 
 });
 
 // Graceful shutdown

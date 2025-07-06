@@ -48,46 +48,50 @@ class FaceRecognitionService {
     }
   }
 
-  // Load image from file path
-  async loadImage(imagePath) {
+  // Load image from file path or buffer
+  async loadImage(imageInput) {
     try {
-      // Use canvas.loadImage for Node.js compatibility
-      const image = await loadImage(imagePath);
-      return image;
+      if (Buffer.isBuffer(imageInput)) {
+        // Use canvas.loadImage from buffer
+        const {Image} = require('canvas');
+        const img = new Image();
+        img.src = imageInput;
+        return img;
+      } else {
+        // Use canvas.loadImage for Node.js compatibility
+        const image = await loadImage(imageInput);
+        return image;
+      }
     } catch (error) {
       console.error('DEBUG: loadImage error', error);
       throw new Error(`Failed to load image: ${error.message}`);
     }
   }
 
-  // Detect faces in image
-  async detectFaces(imagePath) {
+  // Detect faces in image (path or buffer)
+  async detectFaces(imageInput) {
     try {
-      const image = await this.loadImage(imagePath);
+      const image = await this.loadImage(imageInput);
       const detections = await faceapi
         .detectAllFaces(image, new faceapi.TinyFaceDetectorOptions())
         .withFaceLandmarks()
         .withFaceDescriptors();
-
       return detections;
     } catch (error) {
       throw new Error(`Face detection failed: ${error.message}`);
     }
   }
 
-  // Extract face descriptor from image
-  async extractFaceDescriptor(imagePath) {
+  // Extract face descriptor from image (path or buffer)
+  async extractFaceDescriptor(imageInput) {
     try {
-      const detections = await this.detectFaces(imagePath);
-
+      const detections = await this.detectFaces(imageInput);
       if (detections.length === 0) {
         throw new Error('No faces detected in the image');
       }
-
       if (detections.length > 1) {
         throw new Error('Multiple faces detected. Please upload an image with only one face');
       }
-
       const detection = detections[0];
       return {
         descriptor: Array.from(detection.descriptor),
@@ -104,7 +108,6 @@ class FaceRecognitionService {
     try {
       const distance = faceapi.euclideanDistance(descriptor1, descriptor2);
       const similarity = 1 - distance;
-
       return {
         distance,
         similarity,
@@ -116,18 +119,15 @@ class FaceRecognitionService {
     }
   }
 
-  // Recognize face against database
-  async recognizeFace(imagePath, storedFaces, threshold = 0.6) {
+  // Recognize face against database (path or buffer)
+  async recognizeFace(imageInput, storedFaces, threshold = 0.6) {
     try {
-      const {descriptor} = await this.extractFaceDescriptor(imagePath);
-
+      const {descriptor} = await this.extractFaceDescriptor(imageInput);
       let bestMatch = null;
       let highestSimilarity = 0;
-
       for (const storedFace of storedFaces) {
         const storedDescriptor = JSON.parse(storedFace.descriptor);
         const comparison = this.compareFaces(descriptor, storedDescriptor, threshold);
-
         if (comparison.similarity > highestSimilarity) {
           highestSimilarity = comparison.similarity;
           bestMatch = {
@@ -137,7 +137,6 @@ class FaceRecognitionService {
           };
         }
       }
-
       return {
         recognized: bestMatch && bestMatch.similarity >= threshold,
         match: bestMatch,
@@ -148,25 +147,21 @@ class FaceRecognitionService {
     }
   }
 
-  // Validate image for face recognition
-  async validateImage(imagePath) {
+  // Validate image for face recognition (path or buffer)
+  async validateImage(imageInput) {
     try {
-      const detections = await this.detectFaces(imagePath);
-
+      const detections = await this.detectFaces(imageInput);
       if (detections.length === 0) {
         return {valid: false, error: 'No faces detected in the image'};
       }
-
       if (detections.length > 1) {
         return {
           valid: false,
           error: 'Multiple faces detected. Please upload an image with only one face',
         };
       }
-
       const detection = detections[0];
       const {width, height} = detection.detection.box;
-
       // Check minimum face size
       const minSize = 50;
       if (width < minSize || height < minSize) {
@@ -175,7 +170,6 @@ class FaceRecognitionService {
           error: 'Face is too small. Please upload a higher resolution image',
         };
       }
-
       return {valid: true, detection};
     } catch (error) {
       return {valid: false, error: `Image validation failed: ${error.message}`};

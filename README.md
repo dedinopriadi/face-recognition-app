@@ -17,6 +17,7 @@ A professional face recognition application built with Node.js, TensorFlow.js, a
 💻 **Modern UI**: Responsive web interface (EJS + Tailwind CSS)  
 🔗 **API First**: RESTful API endpoints for integration  
 ⏱️ **Real-time Processing**: Fast face detection and recognition with confidence scoring  
+🎥 **Live Face Recognition**: Real-time face detection and recognition from webcam (WebRTC), with smart pause and overlay  
 📋 **Comprehensive Logging**: Winston logger, request logging, error tracking  
 🧪 **Automated Testing**: Jest, Supertest, CI/CD pipeline
 
@@ -35,6 +36,10 @@ _Page to enroll a new face into the database._
 ### Recognize Face
 ![Recognize](screenshots/recognize.png)
 _Page to recognize a face from an uploaded photo._
+
+### Live Face Recognition
+![Live Recognize](screenshots/live-recognize.png)
+_Real-time face recognition from webcam with overlay and results card._
 
 ### About
 ![About](screenshots/about.png)
@@ -86,6 +91,7 @@ npm run dev
    - 🌐 Web UI: http://localhost:3000
    - 📝 Enroll Faces: http://localhost:3000/enroll
    - 🕵️ Recognize Faces: http://localhost:3000/recognize
+   - 🎥 Live Face Recognition: http://localhost:3000/live-recognize
    - 💓 Health Check: http://localhost:3000/health
    - 📊 API Status: http://localhost:3000/api/status
 
@@ -214,6 +220,37 @@ Body:
 ```
 Recognizes a face against the enrolled database.
 
+### Live Face Recognition (Webcam)
+```
+POST /api/face/recognize-live
+Content-Type: multipart/form-data
+Body:
+- image: file (required, JPEG/PNG/WebP frame from webcam)
+```
+Performs real-time face recognition from webcam frames. Returns detected face info, bounding box, name, confidence, and overlay data.
+
+**Smart Pause:**
+- When the same face is recognized continuously, the client will pause sending frames to save resources.
+- Recognition resumes automatically if the face changes or is no longer detected.
+
+**Example Response:**
+```json
+{
+  "message": "Face recognized successfully",
+  "data": {
+    "recognized": true,
+    "person": {
+      "id": 8,
+      "name": "Dedi Nopriadi",
+      "confidence": 0.63,
+      "similarity": 0.63,
+      "box": { "x": 172, "y": 133, "width": 163, "height": 141 }
+    }
+  },
+  "source": "live"
+}
+```
+
 ### Get All Faces
 ```
 GET /api/face/faces
@@ -272,6 +309,7 @@ npm run docker:down  # Stop all containers
 - Face recognition health: `/api/face/health`
 - Request logging with Morgan
 - Error tracking and logging (Winston)
+- **Live recognize:** All frames are processed in-memory, no files are saved to disk for live recognition. Only important events are logged.
 
 ---
 

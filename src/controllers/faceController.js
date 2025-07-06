@@ -111,25 +111,28 @@ class FaceController {
         });
       }
 
-      const imagePath = req.file.processedPath || req.file.path;
+      // Tentukan sumber image: buffer (live recognize) atau file path (default)
+      const imageInput = req.file.buffer || req.file.processedPath || req.file.path;
 
       // --- Caching Logic: Check before processing ---
-      const imageBuffer = await fs.readFile(imagePath);
-      const imageHash = crypto.createHash('sha256').update(imageBuffer).digest('hex');
-      const cacheKey = cacheHelpers.generateKey('recognition', imageHash);
-
-      const cachedResult = await cacheHelpers.get(cacheKey);
-      if (cachedResult) {
-        // Cache Hit!
-        return res.json({
-          ...cachedResult,
-          source: 'cache',
-        });
+      let imageBuffer, imageHash, cacheKey, cachedResult;
+      if (!req.file.buffer) { // hanya cache jika file di disk
+        imageBuffer = await fs.readFile(imageInput);
+        imageHash = crypto.createHash('sha256').update(imageBuffer).digest('hex');
+        cacheKey = cacheHelpers.generateKey('recognition', imageHash);
+        cachedResult = await cacheHelpers.get(cacheKey);
+        if (cachedResult) {
+          // Cache Hit!
+          return res.json({
+            ...cachedResult,
+            source: 'cache',
+          });
+        }
       }
       // --- End Caching Logic ---
 
       // Validate image for face recognition
-      const validation = await faceRecognitionService.validateImage(imagePath);
+      const validation = await faceRecognitionService.validateImage(imageInput);
       if (!validation.valid) {
         return res.status(400).json({
           error: validation.error,
@@ -146,14 +149,25 @@ class FaceController {
       }
 
       // Recognize face
-      const recognition = await faceRecognitionService.recognizeFace(imagePath, storedFaces, 0.6);
+      const recognition = await faceRecognitionService.recognizeFace(imageInput, storedFaces, 0.6);
 
       let responsePayload;
 
       if (recognition.recognized) {
-        // Log successful recognition
-        await dbHelpers.logRecognition(recognition.match.id, recognition.confidence, imagePath);
-
+        // Log successful recognition (hanya jika file di disk)
+        if (!req.file.buffer) {
+          await dbHelpers.logRecognition(recognition.match.id, recognition.confidence, imageInput);
+        }
+        // Ambil bounding box dari hasil extractFaceDescriptor
+        const {detection} = await faceRecognitionService.extractFaceDescriptor(imageInput);
+        const box = detection && detection.box
+          ? {
+              x: detection.box.x,
+              y: detection.box.y,
+              width: detection.box.width,
+              height: detection.box.height,
+            }
+          : null;
         responsePayload = {
           message: 'Face recognized successfully',
           data: {
@@ -163,8 +177,9 @@ class FaceController {
               name: recognition.match.name,
               confidence: recognition.confidence,
               similarity: recognition.match.similarity,
+              box,
             },
-            imagePath,
+            imagePath: req.file.buffer ? undefined : imageInput,
           },
         };
       } else {
@@ -173,20 +188,20 @@ class FaceController {
           data: {
             recognized: false,
             confidence: recognition.confidence,
-            imagePath,
+            imagePath: req.file.buffer ? undefined : imageInput,
           },
         };
       }
 
-      // --- Caching Logic: Save after processing ---
-      // Set cache to expire in 1 hour (3600 seconds)
-      await cacheHelpers.set(cacheKey, responsePayload, 3600);
-
-      // If not recognized, add key to the set of unrecognized keys
-      if (!recognition.recognized) {
-        await cacheHelpers.setAdd('unrecognized_keys', cacheKey);
+      // --- Caching Logic: Save after processing (hanya jika file di disk) ---
+      if (!req.file.buffer) {
+        // Set cache to expire in 1 hour (3600 seconds)
+        await cacheHelpers.set(cacheKey, responsePayload, 3600);
+        // If not recognized, add key to the set of unrecognized keys
+        if (!recognition.recognized) {
+          await cacheHelpers.setAdd('unrecognized_keys', cacheKey);
+        }
       }
-      // --- End Caching Logic ---
 
       res.json({
         ...responsePayload,

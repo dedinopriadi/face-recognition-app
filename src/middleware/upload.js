@@ -202,6 +202,18 @@ const uploadSingle = upload.single('image');
 // Complete upload middleware chain
 const uploadMiddleware = [uploadSingle, handleUploadError, processImage, cleanupOriginal];
 
+// Tambahan: memory storage untuk live recognize
+const memoryStorage = multer.memoryStorage();
+const memoryUpload = multer({
+  storage: memoryStorage,
+  fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+    files: 1,
+  },
+});
+const memoryUploadMiddleware = [memoryUpload.single('image'), handleUploadError];
+
 module.exports = {
   upload,
   uploadSingle,
@@ -211,4 +223,5 @@ module.exports = {
   cleanupOriginal,
   handleUploadError,
   isValidImageSignature,
+  memoryUploadMiddleware, // <--- tambahkan ini
 };

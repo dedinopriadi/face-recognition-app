@@ -25,11 +25,11 @@
     "ai",
     "machine-learning"
   ],
-  "author": "Your Name",
+  "author": "Dedi Nopriadi",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/face-recognition-app.git"
+    "url": "https://github.com/dedinopriadi/face-recognition-app.git"
   },
   "engines": {
     "node": ">=18.0.0",

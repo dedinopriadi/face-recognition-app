@@ -116,7 +116,7 @@ recognizeForm.addEventListener('submit', async function(e) {
         resultsArea.classList.remove('hidden');
         errorResult.classList.remove('hidden');
     }
-});
+}); 
 
 // Add event listener for click on uploadArea
 uploadArea.addEventListener('click', function() {

@@ -63,25 +63,25 @@ _Project and developer profile page._
 ## 🚦 Quick Start
 
 1. **Clone the repository**
-   ```bash
+```bash
    git clone https://github.com/dedinopriadi/face-recognition-app.git
-   cd face-recognition-app
-   ```
+cd face-recognition-app
+```
 2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 3. **Download Face Recognition Models**
-   ```bash
-   node scripts/download-models.js
+```bash
+node scripts/download-models.js
    # Or download manually from:
-   # https://github.com/justadudewhohacks/face-api.js/tree/master/weights
-   # Place files in ./models directory
-   ```
+# https://github.com/justadudewhohacks/face-api.js/tree/master/weights
+# Place files in ./models directory
+```
 4. **Start development server**
-   ```bash
-   npm run dev
-   ```
+```bash
+npm run dev
+```
 5. **Access the application**
    - 🌐 Web UI: http://localhost:3000
    - 📝 Enroll Faces: http://localhost:3000/enroll

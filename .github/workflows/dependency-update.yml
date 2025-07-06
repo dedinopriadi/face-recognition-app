@@ -1,0 +1,138 @@
+name: Dependency Update
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-dependencies:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Check for outdated packages
+      id: outdated
+      run: |
+        npm outdated --json > outdated.json || echo "{}" > outdated.json
+        echo "outdated=$(cat outdated.json)" >> $GITHUB_OUTPUT
+    
+    - name: Update dependencies
+      if: steps.outdated.outputs.outdated != '{}'
+      run: |
+        # Update npm packages
+        npm update
+        
+        # Update dev dependencies
+        npm update --dev
+        
+        # Check for major updates
+        npx npm-check-updates --target minor
+    
+    - name: Run tests after update
+      if: steps.outdated.outputs.outdated != '{}'
+      run: npm test
+    
+    - name: Create Pull Request
+      if: steps.outdated.outputs.outdated != '{}'
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'chore: update dependencies'
+        title: '🤖 Automated Dependency Update'
+        body: |
+          ## 🤖 Automated Dependency Update
+          
+          This PR was automatically created to update outdated dependencies.
+          
+          ### Changes:
+          - Updated npm packages to latest compatible versions
+          - Updated dev dependencies
+          - All tests passing ✅
+          
+          ### To do:
+          - [ ] Review changes
+          - [ ] Test manually if needed
+          - [ ] Merge if everything looks good
+          
+          ---
+          *This PR was created by GitHub Actions*
+        branch: dependency-update
+        delete-branch: true
+        labels: |
+          dependencies
+          automated
+          security
+
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run Snyk security scan
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high --json-file-output=snyk-report.json
+    
+    - name: Upload Snyk results to GitHub Code Scanning
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: snyk-report.json
+    
+    - name: Comment PR with security findings
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const snykReport = JSON.parse(fs.readFileSync('snyk-report.json', 'utf8'));
+          
+          if (snykReport.vulnerabilities && snykReport.vulnerabilities.length > 0) {
+            const comment = `## 🔒 Security Scan Results
+            
+            Found ${snykReport.vulnerabilities.length} security vulnerabilities:
+            
+            ${snykReport.vulnerabilities.map(vuln => 
+              `- **${vuln.title}** (${vuln.severity})
+                - Package: ${vuln.packageName}
+                - Version: ${vuln.version}
+                - CVE: ${vuln.identifiers?.CVE?.join(', ') || 'N/A'}`
+            ).join('\n\n')}
+            
+            Please review and update affected dependencies.`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } 

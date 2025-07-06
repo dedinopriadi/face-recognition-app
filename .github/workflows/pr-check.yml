@@ -1,0 +1,298 @@
+name: Pull Request Check
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # Code quality checks
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run ESLint
+      run: npm run lint
+    
+    - name: Check code formatting
+      run: npm run format --check
+    
+    - name: Check for console.log statements
+      run: |
+        if grep -r "console.log" src/ --exclude-dir=node_modules; then
+          echo "❌ Found console.log statements in production code"
+          exit 1
+        fi
+        echo "✅ No console.log statements found"
+    
+    - name: Check for TODO comments
+      run: |
+        if grep -r "TODO" src/ --exclude-dir=node_modules; then
+          echo "⚠️  Found TODO comments in code"
+          echo "Please address these before merging"
+        fi
+
+  # Test coverage
+  test-coverage:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run tests with coverage
+      run: npm test
+    
+    - name: Check coverage thresholds
+      run: |
+        # Check if coverage meets minimum thresholds
+        COVERAGE=$(npm test -- --coverage --watchAll=false --passWithNoTests 2>&1 | grep -o "All files[^%]*" | grep -o "[0-9]*\.[0-9]*" | head -1)
+        
+        if (( $(echo "$COVERAGE < 70" | bc -l) )); then
+          echo "❌ Test coverage is below 70% (current: ${COVERAGE}%)"
+          exit 1
+        fi
+        
+        echo "✅ Test coverage is above 70% (current: ${COVERAGE}%)"
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  # Security checks
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run npm audit
+      run: npm audit --audit-level=moderate
+    
+    - name: Run Snyk security scan
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high --json-file-output=snyk-report.json
+    
+    - name: Comment PR with security findings
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          try {
+            const snykReport = JSON.parse(fs.readFileSync('snyk-report.json', 'utf8'));
+            
+            if (snykReport.vulnerabilities && snykReport.vulnerabilities.length > 0) {
+              const comment = `## 🔒 Security Scan Results
+              
+              Found ${snykReport.vulnerabilities.length} security vulnerabilities:
+              
+              ${snykReport.vulnerabilities.map(vuln => 
+                `- **${vuln.title}** (${vuln.severity})
+                  - Package: ${vuln.packageName}
+                  - Version: ${vuln.version}
+                  - CVE: ${vuln.identifiers?.CVE?.join(', ') || 'N/A'}`
+              ).join('\n\n')}
+              
+              Please review and update affected dependencies.`;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } else {
+              const comment = `## 🔒 Security Scan Results
+              
+              ✅ No security vulnerabilities found!`;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+          } catch (error) {
+            console.log('No Snyk report found or error reading file');
+          }
+
+  # Docker build test
+  docker-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build Docker image
+      run: docker build -t face-recognition-test .
+    
+    - name: Test Docker image
+      run: |
+        # Test container startup
+        docker run -d --name test-container -p 3000:3000 \
+          -e NODE_ENV=test \
+          face-recognition-test
+        
+        # Wait for container to be ready
+        sleep 15
+        
+        # Test if container is running
+        docker ps | grep test-container
+        
+        # Test basic connectivity
+        curl -f http://localhost:3000/ || echo "App is running but no health endpoint"
+        
+        # Cleanup
+        docker stop test-container
+        docker rm test-container
+
+  # Performance check
+  performance:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Check bundle size
+      run: |
+        # Install bundle analyzer if not exists
+        npm install --save-dev webpack-bundle-analyzer
+        
+        # Check if there are any large files
+        find src/ -name "*.js" -size +100k | while read file; do
+          echo "⚠️  Large file detected: $file"
+        done
+    
+    - name: Run basic performance test
+      run: |
+        # Start the app in background
+        npm start &
+        APP_PID=$!
+        
+        # Wait for app to start
+        sleep 10
+        
+        # Test response time
+        RESPONSE_TIME=$(curl -w "%{time_total}" -o /dev/null -s "http://localhost:3000/")
+        
+        if (( $(echo "$RESPONSE_TIME > 2.0" | bc -l) )); then
+          echo "⚠️  Slow response time: ${RESPONSE_TIME}s"
+        else
+          echo "✅ Good response time: ${RESPONSE_TIME}s"
+        fi
+        
+        # Kill the app
+        kill $APP_PID
+
+  # PR size check
+  pr-size:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Check PR size
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { data: pr } = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.issue.number
+          });
+          
+          const additions = pr.additions;
+          const deletions = pr.deletions;
+          const totalChanges = additions + deletions;
+          
+          let sizeLabel = '';
+          if (totalChanges < 10) {
+            sizeLabel = 'XS';
+          } else if (totalChanges < 50) {
+            sizeLabel = 'S';
+          } else if (totalChanges < 250) {
+            sizeLabel = 'M';
+          } else if (totalChanges < 1000) {
+            sizeLabel = 'L';
+          } else {
+            sizeLabel = 'XL';
+          }
+          
+          // Add size label
+          await github.rest.issues.addLabels({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            labels: [`size/${sizeLabel}`]
+          });
+          
+          // Comment with PR stats
+          const comment = `## 📊 Pull Request Stats
+          
+          - **Additions:** +${additions}
+          - **Deletions:** -${deletions}
+          - **Total Changes:** ${totalChanges}
+          - **Size:** ${sizeLabel}
+          
+          ${totalChanges > 1000 ? '⚠️  Large PR detected! Please consider breaking this into smaller PRs.' : '✅ PR size looks good!'}`;
+          
+          await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          }); 

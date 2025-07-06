@@ -1,0 +1,323 @@
+# GitHub Repository Settings
+# This file configures various repository settings via GitHub Actions
+
+repository:
+  # Repository name
+  name: face-recognition-app
+  
+  # Repository description
+  description: Professional Face Recognition Application with Node.js, TensorFlow.js, and Docker
+  
+  # Repository homepage
+  homepage: https://github.com/dedinopriadi/face-recognition-app
+  
+  # Repository topics
+  topics:
+    - face-recognition
+    - tensorflow
+    - nodejs
+    - express
+    - docker
+    - ai
+    - machine-learning
+    - computer-vision
+  
+  # Repository visibility (public/private)
+  private: false
+  
+  # Enable issues
+  has_issues: true
+  
+  # Enable wiki
+  has_wiki: false
+  
+  # Enable downloads
+  has_downloads: false
+  
+  # Enable discussions
+  has_discussions: true
+  
+  # Default branch
+  default_branch: main
+  
+  # Allow squash merging
+  allow_squash_merge: true
+  
+  # Allow merge commits
+  allow_merge_commit: true
+  
+  # Allow rebase merging
+  allow_rebase_merge: true
+  
+  # Delete head branches when merged
+  delete_branch_on_merge: true
+  
+  # Enable auto-merge
+  allow_auto_merge: false
+  
+  # Enable vulnerability alerts
+  vulnerability_alerts: true
+  
+  # Enable security policy
+  security_and_analysis:
+    advanced_security:
+      status: enabled
+    secret_scanning:
+      status: enabled
+    secret_scanning_push_protection:
+      status: enabled
+    dependency_graph:
+      status: enabled
+    dependabot_security_updates:
+      status: enabled
+    dependabot_version_updates:
+      status: enabled
+
+# Branch protection rules
+branches:
+  - name: main
+    protection:
+      required_status_checks:
+        strict: true
+        contexts:
+          - "test"
+          - "security"
+          - "docker"
+          - "performance"
+      enforce_admins: true
+      required_pull_request_reviews:
+        required_approving_review_count: 2
+        dismiss_stale_reviews: true
+        require_code_owner_reviews: false
+        require_last_push_approval: true
+      restrictions:
+        users: []
+        teams: []
+      required_linear_history: false
+      allow_force_pushes: false
+      allow_deletions: false
+      block_creations: false
+      required_conversation_resolution: true
+      lock_branch: false
+      allow_fork_syncing: true
+
+  - name: develop
+    protection:
+      required_status_checks:
+        strict: true
+        contexts:
+          - "test"
+          - "security"
+          - "docker"
+      enforce_admins: false
+      required_pull_request_reviews:
+        required_approving_review_count: 1
+        dismiss_stale_reviews: true
+        require_code_owner_reviews: false
+        require_last_push_approval: false
+      restrictions:
+        users: []
+        teams: []
+      required_linear_history: false
+      allow_force_pushes: false
+      allow_deletions: false
+      block_creations: false
+      required_conversation_resolution: false
+      lock_branch: false
+      allow_fork_syncing: true
+
+# Issue labels
+labels:
+  - name: "bug"
+    color: "d73a4a"
+    description: "Something isn't working"
+  - name: "documentation"
+    color: "0075ca"
+    description: "Improvements or additions to documentation"
+  - name: "enhancement"
+    color: "a2eeef"
+    description: "New feature or request"
+  - name: "good first issue"
+    color: "7057ff"
+    description: "Good for newcomers"
+  - name: "help wanted"
+    color: "008672"
+    description: "Extra attention is needed"
+  - name: "invalid"
+    color: "e4e669"
+    description: "Something doesn't seem right"
+  - name: "question"
+    color: "d876e3"
+    description: "Further information is requested"
+  - name: "wontfix"
+    color: "ffffff"
+    description: "This will not be worked on"
+  - name: "security"
+    color: "ff0000"
+    description: "Security related issues"
+  - name: "performance"
+    color: "ffa500"
+    description: "Performance improvements"
+  - name: "dependencies"
+    color: "0366d6"
+    description: "Pull requests that update a dependency file"
+  - name: "automated"
+    color: "1f883d"
+    description: "Automated changes"
+  - name: "size/XS"
+    color: "62d4e3"
+    description: "Extra small changes"
+  - name: "size/S"
+    color: "62d4e3"
+    description: "Small changes"
+  - name: "size/M"
+    color: "62d4e3"
+    description: "Medium changes"
+  - name: "size/L"
+    color: "62d4e3"
+    description: "Large changes"
+  - name: "size/XL"
+    color: "62d4e3"
+    description: "Extra large changes"
+
+# Issue templates
+issue_templates:
+  - name: "Bug Report"
+    about: "Create a report to help us improve"
+    title: "[BUG] "
+    labels: ["bug"]
+    body: |
+      **Describe the bug**
+      A clear and concise description of what the bug is.
+
+      **To Reproduce**
+      Steps to reproduce the behavior:
+      1. Go to '...'
+      2. Click on '....'
+      3. Scroll down to '....'
+      4. See error
+
+      **Expected behavior**
+      A clear and concise description of what you expected to happen.
+
+      **Screenshots**
+      If applicable, add screenshots to help explain your problem.
+
+      **Environment:**
+      - OS: [e.g. macOS, Windows, Linux]
+      - Browser: [e.g. chrome, safari, firefox]
+      - Version: [e.g. 22]
+
+      **Additional context**
+      Add any other context about the problem here.
+
+  - name: "Feature Request"
+    about: "Suggest an idea for this project"
+    title: "[FEATURE] "
+    labels: ["enhancement"]
+    body: |
+      **Is your feature request related to a problem? Please describe.**
+      A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+
+      **Describe the solution you'd like**
+      A clear and concise description of what you want to happen.
+
+      **Describe alternatives you've considered**
+      A clear and concise description of any alternative solutions or features you've considered.
+
+      **Additional context**
+      Add any other context or screenshots about the feature request here.
+
+  - name: "Security Issue"
+    about: "Report a security vulnerability"
+    title: "[SECURITY] "
+    labels: ["security"]
+    body: |
+      **Security Issue Description**
+      A clear and concise description of the security vulnerability.
+
+      **Steps to Reproduce**
+      Steps to reproduce the vulnerability:
+      1. Go to '...'
+      2. Click on '....'
+      3. See vulnerability
+
+      **Expected behavior**
+      A clear and concise description of what should happen.
+
+      **Environment:**
+      - OS: [e.g. macOS, Windows, Linux]
+      - Browser: [e.g. chrome, safari, firefox]
+      - Version: [e.g. 22]
+
+      **Additional context**
+      Add any other context about the security issue here.
+
+# Pull request template
+pull_request_template: |
+  ## Description
+  Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context.
+
+  Fixes # (issue)
+
+  ## Type of change
+  Please delete options that are not relevant.
+
+  - [ ] Bug fix (non-breaking change which fixes an issue)
+  - [ ] New feature (non-breaking change which adds functionality)
+  - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+  - [ ] This change requires a documentation update
+
+  ## How Has This Been Tested?
+  Please describe the tests that you ran to verify your changes. Provide instructions so we can reproduce. Please also list any relevant details for your test configuration.
+
+  - [ ] Test A
+  - [ ] Test B
+
+  **Test Configuration:**
+  - OS: [e.g. macOS, Windows, Linux]
+  - Node.js version: [e.g. 18.x, 20.x]
+  - Browser: [e.g. chrome, safari, firefox]
+
+  ## Checklist:
+  - [ ] My code follows the style guidelines of this project
+  - [ ] I have performed a self-review of my own code
+  - [ ] I have commented my code, particularly in hard-to-understand areas
+  - [ ] I have made corresponding changes to the documentation
+  - [ ] My changes generate no new warnings
+  - [ ] I have added tests that prove my fix is effective or that my feature works
+  - [ ] New and existing unit tests pass locally with my changes
+  - [ ] Any dependent changes have been merged and published in downstream modules
+
+# Repository rules
+rules:
+  - name: "Require pull request reviews before merging"
+    conditions:
+      ref_name:
+        include:
+          - "main"
+          - "develop"
+    enforcement: "ACTIVE"
+    rules:
+      - type: "pull_request_reviews"
+        parameters:
+          required_approving_review_count: 1
+          dismiss_stale_reviews: true
+          require_code_owner_reviews: false
+          require_last_push_approval: true
+
+  - name: "Require status checks to pass before merging"
+    conditions:
+      ref_name:
+        include:
+          - "main"
+          - "develop"
+    enforcement: "ACTIVE"
+    rules:
+      - type: "required_status_checks"
+        parameters:
+          required_status_checks:
+            - context: "test"
+            - context: "security"
+            - context: "docker"
+          strict_required_status_checks_policy: true 

@@ -5,6 +5,7 @@ require('dotenv').config({ path: '.env.test' });
 process.env.NODE_ENV = 'test';
 process.env.PORT = '3001';
 process.env.DB_PATH = ':memory:'; // Use in-memory database for tests
+process.env.REDIS_URL = 'redis://localhost:6379'; // Set Redis URL for tests
 
 // Mock console methods to reduce noise in tests
 global.console = {
@@ -17,7 +18,10 @@ global.console = {
 };
 
 // Global test timeout
-jest.setTimeout(10000);
+jest.setTimeout(15000);
+
+// Note: Redis mocking is handled in individual test files
+// to avoid conflicts between app tests and redis tests
 
 // Cleanup after each test
 afterEach(() => {

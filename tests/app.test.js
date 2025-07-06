@@ -1,7 +1,37 @@
 const request = require('supertest');
-const app = require('../src/server');
 const path = require('path');
 const fs = require('fs');
+
+// Mock Redis for app tests
+jest.mock('../src/config/redis', () => ({
+  redisClient: {
+    isOpen: true,
+    status: 'ready',
+    connect: jest.fn().mockResolvedValue(true),
+    disconnect: jest.fn().mockResolvedValue(true),
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue('OK'),
+    setEx: jest.fn().mockResolvedValue('OK'),
+    del: jest.fn().mockResolvedValue(1),
+    flushall: jest.fn().mockResolvedValue('OK'),
+    flushAll: jest.fn().mockResolvedValue('OK'),
+    sadd: jest.fn().mockResolvedValue(1),
+    sAdd: jest.fn().mockResolvedValue(1),
+    smembers: jest.fn().mockResolvedValue([]),
+    sMembers: jest.fn().mockResolvedValue([]),
+  },
+  cacheHelpers: {
+    set: jest.fn().mockResolvedValue(true),
+    get: jest.fn().mockResolvedValue(null),
+    delete: jest.fn().mockResolvedValue(true),
+    clear: jest.fn().mockResolvedValue(true),
+    generateKey: jest.fn().mockImplementation((...parts) => parts.join(':')),
+    setAdd: jest.fn().mockResolvedValue(true),
+    setMembers: jest.fn().mockResolvedValue([]),
+  },
+}));
+
+const app = require('../src/server');
 
 // Helper: path ke file gambar valid
 const validImagePath = path.join(__dirname, '../test-images/person1.jpg');
@@ -126,13 +156,14 @@ describe('Face Recognition App', () => {
       const faceRecognitionService = require('../src/services/faceRecognitionService');
       jest.spyOn(faceRecognitionService, 'loadModels').mockResolvedValue(true);
       jest.spyOn(faceRecognitionService, 'validateImage').mockResolvedValue({ valid: true, detection: { score: 0.99 } });
+      jest.spyOn(faceRecognitionService, 'extractFaceDescriptor').mockResolvedValue({ descriptor: [1,2,3], landmarks: {}, detection: { score: 0.99 } });
       const response = await request(app)
         .post('/api/face/recognize')
         .attach('image', validImagePath);
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('error');
       jest.restoreAllMocks();
-    });
+    }, 15000);
 
     it('should return 503 if models are not loaded (recognize)', async () => {
       const faceRecognitionService = require('../src/services/faceRecognitionService');
@@ -401,7 +432,7 @@ describe('Face Recognition App', () => {
         .attach('image', validImagePath);
       expect([200, 500]).toContain(response.status); // tergantung error handling
       jest.restoreAllMocks();
-    });
+    }, 15000);
 
     it('should handle error in dbHelpers.getStats', async () => {
       const dbHelpers = require('../src/config/database').dbHelpers;

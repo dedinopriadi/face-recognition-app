@@ -14,94 +14,101 @@ require('./config/database');
 require('./config/redis');
 
 // Initialize logger
-const { logger, logHelpers } = require('./config/logger');
+const {logger, logHelpers} = require('./config/logger');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Security Middleware
 app.use(helmet());
-app.use(helmet.contentSecurityPolicy({
-  directives: {
-    defaultSrc: ["'self'"],
-    frameSrc: [
-      "'self'",
-      "https://ko-fi.com",
-      "https://storage.ko-fi.com",
-      "https://www.paypal.com",
-      "https://www.sandbox.paypal.com"
-    ],
-    frameAncestors: ["'self'", "https://ko-fi.com"],
-    scriptSrc: [
-      "'self'",
-      'https://cdn.jsdelivr.net',
-      'https://cdnjs.cloudflare.com',
-      'https://unpkg.com',
-      'https://storage.ko-fi.com',
-      'https://ko-fi.com',
-      'https://cdn.ko-fi.com',
-      'https://www.paypal.com',
-      'https://www.sandbox.paypal.com',
-      'https://www.paypalobjects.com',
-      "'unsafe-inline'"
-    ],
-    styleSrc: [
-      "'self'",
-      'https://fonts.googleapis.com',
-      'https://cdn.jsdelivr.net',
-      'https://cdnjs.cloudflare.com',
-      'https://unpkg.com',
-      'https://storage.ko-fi.com',
-      'https://ko-fi.com',
-      'https://cdn.ko-fi.com',
-      "'unsafe-inline'"
-    ],
-    fontSrc: [
-      "'self'",
-      'https://fonts.gstatic.com',
-      'https://cdnjs.cloudflare.com',
-      'https://cdn.jsdelivr.net',
-      'https://unpkg.com'
-    ],
-    imgSrc: [
-      "'self'",
-      'data:',
-      'blob:',
-      'https://storage.ko-fi.com',
-      'https://ko-fi.com',
-      'https://cdn.ko-fi.com',
-      'https://www.paypal.com',
-      'https://www.paypalobjects.com'
-    ],
-    connectSrc: [
-      "'self'",
-      'https://www.paypal.com',
-      'https://www.paypalobjects.com',
-      'https://api.paypal.com',
-      'https://api.sandbox.paypal.com'
-    ],
-    objectSrc: ["'none'"],
-    upgradeInsecureRequests: [],
-  },
-}));
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  methods: ['GET', 'POST'],
-  credentials: true,
-}));
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ['\'self\''],
+      frameSrc: [
+        '\'self\'',
+        'https://ko-fi.com',
+        'https://storage.ko-fi.com',
+        'https://www.paypal.com',
+        'https://www.sandbox.paypal.com',
+      ],
+      frameAncestors: ['\'self\'', 'https://ko-fi.com'],
+      scriptSrc: [
+        '\'self\'',
+        'https://cdn.jsdelivr.net',
+        'https://cdnjs.cloudflare.com',
+        'https://unpkg.com',
+        'https://storage.ko-fi.com',
+        'https://ko-fi.com',
+        'https://cdn.ko-fi.com',
+        'https://www.paypal.com',
+        'https://www.sandbox.paypal.com',
+        'https://www.paypalobjects.com',
+        '\'unsafe-inline\'',
+      ],
+      styleSrc: [
+        '\'self\'',
+        'https://fonts.googleapis.com',
+        'https://cdn.jsdelivr.net',
+        'https://cdnjs.cloudflare.com',
+        'https://unpkg.com',
+        'https://storage.ko-fi.com',
+        'https://ko-fi.com',
+        'https://cdn.ko-fi.com',
+        '\'unsafe-inline\'',
+      ],
+      fontSrc: [
+        '\'self\'',
+        'https://fonts.gstatic.com',
+        'https://cdnjs.cloudflare.com',
+        'https://cdn.jsdelivr.net',
+        'https://unpkg.com',
+      ],
+      imgSrc: [
+        '\'self\'',
+        'data:',
+        'blob:',
+        'https://storage.ko-fi.com',
+        'https://ko-fi.com',
+        'https://cdn.ko-fi.com',
+        'https://www.paypal.com',
+        'https://www.paypalobjects.com',
+      ],
+      connectSrc: [
+        '\'self\'',
+        'https://www.paypal.com',
+        'https://www.paypalobjects.com',
+        'https://api.paypal.com',
+        'https://api.sandbox.paypal.com',
+      ],
+      objectSrc: ['\'none\''],
+      upgradeInsecureRequests: [],
+    },
+  }),
+);
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+    credentials: true,
+  }),
+);
 
 // Rate Limiting
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000, // 15 minutes
+  // limit each IP to 100 requests per window
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
   message: 'Too many requests from this IP, please try again later.',
   handler: (req, res) => {
-    logHelpers.security('Rate limit exceeded', { ip: req.ip });
+    logHelpers.security('Rate limit exceeded', {ip: req.ip});
     res.status(429).json({
       error: 'Too many requests from this IP, please try again later.',
-      retryAfter: Math.ceil(parseInt(process.env.RATE_LIMIT_WINDOW_MS) / 1000)
+      retryAfter: Math.ceil(
+        parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) / 1000,
+      ),
     });
-  }
+  },
 });
 app.use('/api/', limiter);
 
@@ -109,19 +116,19 @@ app.use('/api/', limiter);
 app.use(compression());
 
 // Custom Morgan middleware for logging
-app.use((req, res, next) => {
+app.use((req, res, _next) => {
   const start = Date.now();
   res.on('finish', () => {
     const duration = Date.now() - start;
     logHelpers.api(req.method, req.path, res.statusCode, duration, req.ip);
   });
-  next();
+  _next();
 });
 
-app.use(morgan('combined', { stream: logger.stream }));
+app.use(morgan('combined', {stream: logger.stream}));
 
-app.use(express.json({ limit: process.env.MAX_FILE_SIZE || '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: process.env.MAX_FILE_SIZE || '10mb' }));
+app.use(express.json({limit: process.env.MAX_FILE_SIZE || '10mb'}));
+app.use(express.urlencoded({extended: true, limit: process.env.MAX_FILE_SIZE || '10mb'}));
 
 // Static Files
 app.use('/static', express.static(path.join(__dirname, '../public')));
@@ -141,7 +148,7 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
-    version: process.env.npm_package_version || '1.0.0'
+    version: process.env.npm_package_version || '1.0.0',
   });
 });
 
@@ -150,33 +157,33 @@ app.get('/', (req, res) => {
   res.render('index', {
     title: 'Face Recognition App',
     message: 'Welcome to Face Recognition Application',
-    activePage: 'home'
+    activePage: 'home',
   });
 });
 
 app.get('/enroll', (req, res) => {
   res.render('enroll', {
     title: 'Enroll Face - Face Recognition App',
-    activePage: 'enroll'
+    activePage: 'enroll',
   });
 });
 
 app.get('/recognize', (req, res) => {
   res.render('recognize', {
     title: 'Recognize Face - Face Recognition App',
-    activePage: 'recognize'
+    activePage: 'recognize',
   });
 });
 
 app.get('/about', (req, res) => {
   res.render('about', {
     title: 'About - Face Recognition App',
-    activePage: 'about'
+    activePage: 'about',
   });
 });
 
 // API Routes
-app.get('/api/status', async (req, res) => {
+app.get('/api/status', async(req, res) => {
   let redisStatus = 'disconnected';
   try {
     if (redisClient && redisClient.isOpen) {
@@ -193,7 +200,7 @@ app.get('/api/status', async (req, res) => {
     version: packageJson.version,
     uptime: `${Math.floor(process.uptime() / 60)}m ${Math.floor(process.uptime() % 60)}s`,
     redisStatus,
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
   });
 });
 
@@ -201,10 +208,10 @@ app.get('/api/status', async (req, res) => {
 const faceRoutes = require('./routes/faceRoutes');
 app.use('/api/face', faceRoutes);
 
-const { redisClient } = require('./config/redis');
+const {redisClient} = require('./config/redis');
 const packageJson = require('../package.json');
 
-app.get('/api-status', async (req, res) => {
+app.get('/api-status', async(req, res) => {
   let redisStatus = 'disconnected';
   try {
     if (redisClient && redisClient.isOpen) {
@@ -221,7 +228,7 @@ app.get('/api-status', async (req, res) => {
     version: packageJson.version,
     uptime: `${Math.floor(process.uptime() / 60)}m ${Math.floor(process.uptime() % 60)}s`,
     redisStatus,
-    activePage: 'api-status'
+    activePage: 'api-status',
   });
 });
 
@@ -231,22 +238,22 @@ app.use('*', (req, res) => {
   if (req.originalUrl.startsWith('/api/')) {
     return res.status(404).json({
       error: 'API endpoint not found',
-      path: req.originalUrl
+      path: req.originalUrl,
     });
   }
   // For web routes, render 404 page
   res.status(404).render('404', {
     title: 'Page Not Found',
     message: 'The page you are looking for does not exist.',
-    activePage: null
+    activePage: null,
   });
 });
 
 // Error Handler
-app.use((err, req, res, next) => {
-  req.app.get('logger')?.error('Unhandled error', { error: err.message, stack: err.stack });
+app.use((err, req, res, _next) => {
+  req.app.get('logger')?.error('Unhandled error', {error: err.message, stack: err.stack});
   res.status(err.status || 500).json({
-    error: err.message || 'Internal Server Error'
+    error: err.message || 'Internal Server Error',
   });
 });
 
@@ -255,9 +262,9 @@ app.listen(PORT, () => {
   logger.info('🚀 Server started successfully', {
     port: PORT,
     environment: process.env.NODE_ENV || 'development',
-    nodeVersion: process.version
+    nodeVersion: process.version,
   });
-  
+
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
@@ -278,4 +285,4 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-module.exports = app; 
+module.exports = app;

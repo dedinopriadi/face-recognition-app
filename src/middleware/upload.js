@@ -2,8 +2,8 @@ const multer = require('multer');
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs').promises;
-const { validationResult } = require('express-validator');
-const { logger } = require('../config/logger');
+const {validationResult} = require('express-validator');
+const {logger} = require('../config/logger');
 
 // Helper: Check magic number (file signature) for image types
 async function isValidImageSignature(filePath, mimetype) {
@@ -27,11 +27,11 @@ async function isValidImageSignature(filePath, mimetype) {
 
 // Configure multer storage
 const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
+  destination: async(req, file, cb) => {
     const uploadDir = path.join(__dirname, '../../uploads');
-    
+
     try {
-      await fs.mkdir(uploadDir, { recursive: true });
+      await fs.mkdir(uploadDir, {recursive: true});
       cb(null, uploadDir);
     } catch (error) {
       cb(error);
@@ -44,92 +44,95 @@ const storage = multer.diskStorage({
     const ext = path.extname(file.originalname);
     const filename = `face_${timestamp}_${randomString}${ext}`;
     cb(null, filename);
-  }
+  },
 });
 
 // File filter for images
 const fileFilter = (req, file, cb) => {
   // Check file type
   const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-  
+
   if (!allowedMimes.includes(file.mimetype)) {
     return cb(new Error('Invalid file type. Only JPEG, PNG, and WebP images are allowed.'), false);
   }
-  
+
   // Check file size (10MB max)
   const maxSize = 10 * 1024 * 1024; // 10MB
   if (file.size > maxSize) {
     return cb(new Error('File too large. Maximum size is 10MB.'), false);
   }
-  
+
   cb(null, true);
 };
 
 // Configure multer
 const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
+  storage,
+  fileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB
-    files: 1 // Only one file at a time
-  }
+    files: 1, // Only one file at a time
+  },
 });
 
 // Image processing middleware
-const processImage = async (req, res, next) => {
+const processImage = async(req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({
-        error: 'No image file provided'
+        error: 'No image file provided',
       });
     }
 
     // --- Magic number validation ---
     const isValid = await isValidImageSignature(req.file.path, req.file.mimetype);
     if (!isValid) {
-      logger.warn('File signature mismatch or invalid image', { filename: req.file.filename, mimetype: req.file.mimetype });
+      logger.warn('File signature mismatch or invalid image', {
+        filename: req.file.filename,
+        mimetype: req.file.mimetype,
+      });
       await fs.unlink(req.file.path);
-      return res.status(400).json({ error: 'Invalid image file signature' });
+      return res.status(400).json({error: 'Invalid image file signature'});
     }
     // --- End magic number validation ---
 
     const inputPath = req.file.path;
     const outputPath = inputPath.replace(/\.[^/.]+$/, '_processed.jpg');
-    
+
     // Process image with Sharp
     await sharp(inputPath)
       .rotate() // Auto-rotate based on EXIF data
-      .resize(800, 800, { 
+      .resize(800, 800, {
         fit: 'inside',
-        withoutEnlargement: true 
+        withoutEnlargement: true,
       })
       .normalize() // Enhance image contrast
-      .jpeg({ 
+      .jpeg({
         quality: 85,
         progressive: true,
         force: true,
         // Remove all metadata (EXIF, etc)
-        mozjpeg: true
+        mozjpeg: true,
       })
       .toFile(outputPath);
 
     // Update file path to processed image
     req.file.processedPath = outputPath;
-    
+
     // Add image metadata
     const metadata = await sharp(inputPath).metadata();
     req.file.metadata = {
       width: metadata.width,
       height: metadata.height,
       format: metadata.format,
-      size: req.file.size
+      size: req.file.size,
     };
 
     next();
   } catch (error) {
-    logger.error('Image processing error', { error: error.message });
+    logger.error('Image processing error', {error: error.message});
     return res.status(500).json({
-      error: 'Failed to process image'
+      error: 'Failed to process image',
     });
   }
 };
@@ -137,19 +140,19 @@ const processImage = async (req, res, next) => {
 // Validation middleware
 const validateUpload = (req, res, next) => {
   const errors = validationResult(req);
-  
+
   if (!errors.isEmpty()) {
     return res.status(400).json({
       error: 'Validation failed',
-      details: errors.array()
+      details: errors.array(),
     });
   }
-  
+
   next();
 };
 
 // Cleanup middleware - remove original file after processing
-const cleanupOriginal = async (req, res, next) => {
+const cleanupOriginal = async(req, res, next) => {
   try {
     if (req.file && req.file.processedPath && req.file.path !== req.file.processedPath) {
       await fs.unlink(req.file.path);
@@ -163,33 +166,33 @@ const cleanupOriginal = async (req, res, next) => {
 };
 
 // Error handling middleware for multer
-const handleUploadError = (error, req, res, next) => {
+const handleUploadError = (error, req, res, _next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
-        error: 'File too large. Maximum size is 10MB.'
+        error: 'File too large. Maximum size is 10MB.',
       });
     }
     if (error.code === 'LIMIT_FILE_COUNT') {
       return res.status(400).json({
-        error: 'Too many files. Only one file allowed.'
+        error: 'Too many files. Only one file allowed.',
       });
     }
     if (error.code === 'LIMIT_UNEXPECTED_FILE') {
       return res.status(400).json({
-        error: 'Unexpected file field.'
+        error: 'Unexpected file field.',
       });
     }
   }
-  
+
   if (error.message) {
     return res.status(400).json({
-      error: error.message
+      error: error.message,
     });
   }
-  
+
   return res.status(500).json({
-    error: 'File upload failed'
+    error: 'File upload failed',
   });
 };
 
@@ -197,12 +200,7 @@ const handleUploadError = (error, req, res, next) => {
 const uploadSingle = upload.single('image');
 
 // Complete upload middleware chain
-const uploadMiddleware = [
-  uploadSingle,
-  handleUploadError,
-  processImage,
-  cleanupOriginal
-];
+const uploadMiddleware = [uploadSingle, handleUploadError, processImage, cleanupOriginal];
 
 module.exports = {
   upload,
@@ -212,5 +210,5 @@ module.exports = {
   validateUpload,
   cleanupOriginal,
   handleUploadError,
-  isValidImageSignature
-}; 
+  isValidImageSignature,
+};

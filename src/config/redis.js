@@ -1,15 +1,16 @@
 const Redis = require('redis');
-const { logger } = require('./logger');
+const {logger} = require('./logger');
 
 // Redis client configuration
-const redisUrl = process.env.REDIS_URL ||
+const redisUrl =
+  process.env.REDIS_URL ||
   `redis://${process.env.REDIS_HOST || 'redis'}:${process.env.REDIS_PORT || '6379'}`;
 const redisClient = Redis.createClient({
   url: redisUrl,
   socket: {
     connectTimeout: 10000,
-    reconnectStrategy: (retries) => Math.min(retries * 50, 1000)
-  }
+    reconnectStrategy: retries => Math.min(retries * 50, 1000),
+  },
 });
 
 // Handle Redis events
@@ -17,7 +18,7 @@ redisClient.on('connect', () => {
   logger.info('✅ Connected to Redis server');
 });
 
-redisClient.on('error', (err) => {
+redisClient.on('error', err => {
   logger.error('❌ Redis connection error:', err);
 });
 
@@ -26,7 +27,7 @@ redisClient.on('reconnecting', () => {
 });
 
 // Connect to Redis
-(async () => {
+(async() => {
   try {
     await redisClient.connect();
   } catch (error) {
@@ -41,7 +42,7 @@ const cacheHelpers = {
     try {
       const serializedValue = JSON.stringify(value);
       await redisClient.setEx(key, expireSeconds, serializedValue);
-      logger.debug('Cache set successfully', { key, expireSeconds });
+      logger.debug('Cache set successfully', {key, expireSeconds});
       return true;
     } catch (error) {
       logger.error('Cache set error:', error);
@@ -54,7 +55,7 @@ const cacheHelpers = {
     try {
       const value = await redisClient.get(key);
       if (!value) return null;
-      
+
       return JSON.parse(value);
     } catch (error) {
       logger.error('Cache get error:', error);
@@ -66,7 +67,7 @@ const cacheHelpers = {
   async delete(key) {
     try {
       await redisClient.del(key);
-      logger.debug('Cache deleted successfully', { key });
+      logger.debug('Cache deleted successfully', {key});
       return true;
     } catch (error) {
       logger.error('Cache delete error:', error);
@@ -97,7 +98,7 @@ const cacheHelpers = {
       await redisClient.sAdd(setKey, key);
       return true;
     } catch (error) {
-      logger.error('Cache setAdd error:', { setKey, key, error });
+      logger.error('Cache setAdd error:', {setKey, key, error});
       return false;
     }
   },
@@ -108,10 +109,10 @@ const cacheHelpers = {
       const members = await redisClient.sMembers(setKey);
       return members;
     } catch (error) {
-      logger.error('Cache setMembers error:', { setKey, error });
+      logger.error('Cache setMembers error:', {setKey, error});
       return [];
     }
-  }
+  },
 };
 
-module.exports = { redisClient, cacheHelpers }; 
+module.exports = {redisClient, cacheHelpers};

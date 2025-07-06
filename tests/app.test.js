@@ -37,7 +37,9 @@ describe('Face Recognition App', () => {
       expect(response.body).toHaveProperty('message');
       expect(response.body).toHaveProperty('version');
       expect(response.body).toHaveProperty('environment');
-      expect(response.body).toHaveProperty('timestamp');
+      expect(response.body).toHaveProperty('status');
+      expect(response.body).toHaveProperty('uptime');
+      expect(response.body).toHaveProperty('redisStatus');
     });
   });
 
